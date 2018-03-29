@@ -11,7 +11,7 @@
 
  .PARAMETER credFileName
     Name of your Credential file.
-    You can create this file by using:
+    You can create this file by using: 
     Get-Credential | Export-Clixml [PathToYourFile]\[NameOfTheFile].clixml
 
  .PARAMETER credPathName
@@ -75,6 +75,9 @@ Set-Location $RootPathName
 
 #Select Credentials
 $UserCred = Import-clixml "$credPathName\$credFileName"
+
+#Close all open connections
+Disconnect-VIServer -Server $global:DefaultVIServers -Force -Confirm:$false
 
 #Generate reports
 ForEach ($VC in $VCS) {
