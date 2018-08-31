@@ -6,6 +6,7 @@ $DNSZone = "dk.flsmidth.net"
 $VcNamePattern = "*-VC??-?"
 
 # Dont' change anything below this line if you don't know what you do.
+
 #Create and switch to Work Directory
 if (!(Test-Path $OutputPathName)) {
     New-Item -ItemType Directory -Path $OutputPathName
@@ -95,12 +96,12 @@ ForEach ($VC in $VCS) {
        $vms.UsedSpaceGB = [math]::Round($vm.Summary.Storage.Committed/1GB,2)
        $vms.Datastore = $vm.Config.DatastoreUrl[0].Name
        $vms.FaultTolerance = $vm.Runtime.FaultToleranceState
-       $vms.SnapshotName = &{$script:snaps = Get-Snapshot -VM $vm.Name; $script:snaps.Name -join ','}
-       $vms.SnapshotDate = $script:snaps.Created -join ','
-       $vms.SnapshotSizeGB = $script:snaps.SizeGB
+       #$vms.SnapshotName = &{$script:snaps = Get-Snapshot -VM $vm.Name; $script:snaps.Name -join ','}
+       #$vms.SnapshotDate = $script:snaps.Created -join ','
+       #$vms.SnapshotSizeGB = $script:snaps.SizeGB
        $Report += $vms
        Write-Host $vm.Name
-   }
+          }
    $report | export-csv -path ($RootPathName + "\" + $VC.ToString() + "\" + "Inventory"+ (Get-Date -format "yyyy-MM-ddThh-mm-ss") + "VMs.csv") -NoTypeInformation -UseCulture
 
    Disconnect-VIServer -Server $VC.ToString() -Confirm:$false
@@ -110,3 +111,14 @@ ForEach ($VC in $VCS) {
  MergeFiles -dir $RootPathName -OutFile $outFileHW -Pattern $InputPatternHW
  MergeFiles -dir $RootPathName -OutFile $outFileConf -Pattern $InputPatternConf
  MergeFiles -dir $RootPathName -OutFile $outFileVMs -Pattern $InputPatternVms
+
+#Add Azure Information
+Get-AzureRmResource | Export-CSV -path ($RootPathName + "\" + "AzureResources.csv") -NoTypeInformation -UseCulture
+
+$acctKey = ConvertTo-SecureString -String "qJUPDm1Nddxw5ZLCrbsFa6rwZFyq1adqeoOnBJnlEbe/qcPfiSqUaWhfYqH2PnCWXBvuaPoRu9CyBhX0r1J/nQ==" -AsPlainText -Force
+$credential = New-Object System.Management.Automation.PSCredential -ArgumentList "Azure\amsphdemisc01", $acctKey
+New-PSDrive -Name Z -PSProvider FileSystem -Root "\\amsphdemisc01.file.core.windows.net\import-csv-files" -Credential $credential -Persist
+
+Copy-Item -Path ($RootPathName + "\*.csv") -Destination Z:\ -Force
+
+Remove-PSDrive -Name Z
