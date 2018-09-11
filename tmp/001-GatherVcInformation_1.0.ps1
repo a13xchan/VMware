@@ -1,4 +1,4 @@
-﻿<#
+﻿ <#
  .SYNOPSIS
     Gathers Information of your Virtual Center and store it into a *.cvs file
     Including all running VMs with all necessary to know settings.
@@ -36,33 +36,17 @@
 
 #>
 
-$credFileName = "adminph-de.clixml"
-$credPathName = "C:\Scripts\cred" 
+$credFileName = "myUser.clixml"
+$credPathName = "C:\Scripts\VMware\CREDENTIALS" 
 $OutputPathName = "C:\EXPORTS"
-$DNSServerName = "ams-ad-dc01-p.dk.flsmidth.net"
-$DNSZone = "dk.flsmidth.net"
+$DNSServerName = "myDnsServer"
+$DNSZone = "myDNSZone.local"
 $VcNamePattern = "*-VC??-?"
 
 # Dont' change anything below this line if you don't know what you do.
-
-#Create and switch to Work Directory
-if (!(Test-Path $OutputPathName)) {
-    New-Item -ItemType Directory -Path $OutputPathName
-}
-Set-Location $OutputPathName
-New-Item -ItemType Directory -Path (Get-Date -format "yyyy-MM-dd_hh-mm-ss")
-Set-Location ($OutputPathName + "\" + (Get-Date -format "yyyy-MM-dd_hh-mm-ss"))
-$RootPathName =  ($OutputPathName + "\" + (Get-Date -format "yyyy-MM-dd_hh-mm-ss"))
-
-#Select Credentials
-$UserCred = Import-clixml "$credPathName\$credFileName"
-
-#Close all open connections
-$serverlist = $global:DefaultVIServer
-if($serverlist -eq $null) {write-host "No connected servers."} else {
-    Disconnect-VIServer -Server $global:DefaultVIServers -Force -Confirm:$false
-}
-
+$RootPathName = ($OutputPathName + "_" + (Get-Date -format "yyyy-MM-dd_hh-mm-ss"))
+#$outFileHW = Join-Path $RootPathName ((Get-Date -format "yyyy-MM-dd_hh-mm-ss") + "_" + "merged_Hardware.csv")
+#$outFileConf = Join-Path $RootPathName ((Get-Date -format "yyyy-MM-dd_hh-mm-ss")+ "_" + "merged_Configuration.csv")
 $outFileHW = Join-Path $RootPathName "Hardware_merged.csv"
 $outFileConf = Join-Path $RootPathName "Configuration_merged.csv"
 $outFileVMs = Join-Path $RootPathName "VMs_merged.csv"
@@ -85,9 +69,19 @@ Function MergeFiles($dir, $OutFile, $Pattern) {
 #Gathering VCenter Server form DNS
 $VCS = Get-DnsServerResourceRecord -ZoneName $DNSZone -ComputerName $DNSServerName | where-object {$_.Hostname -like $VcNamePattern} | Select-Object -ExpandProperty HostName | sort
 
+#Switch to work directory
+New-Item -ItemType Directory -Path $RootPathName
+Set-Location $RootPathName
+
+#Select Credentials
+$UserCred = Import-clixml "$credPathName\$credFileName"
+
+#Close all open connections
+Disconnect-VIServer -Server $global:DefaultVIServers -Force -Confirm:$false
+
 #Generate reports
 ForEach ($VC in $VCS) {
-  if (Connect-VIServer -Server $VC.ToString() -Credential $UserCred -Force -WarningAction 0) {
+  if (Connect-VIServer -Server $VC.ToString() -Credential $UserCred -WarningAction 0) {
    if (!(Test-Path $VC.ToString())) {
     New-Item -type directory -name $VC.ToString()
    }
@@ -134,12 +128,12 @@ ForEach ($VC in $VCS) {
        $vms.UsedSpaceGB = [math]::Round($vm.Summary.Storage.Committed/1GB,2)
        $vms.Datastore = $vm.Config.DatastoreUrl[0].Name
        $vms.FaultTolerance = $vm.Runtime.FaultToleranceState
-       #$vms.SnapshotName = &{$script:snaps = Get-Snapshot -VM $vm.Name; $script:snaps.Name -join ','}
-       #$vms.SnapshotDate = $script:snaps.Created -join ','
-       #$vms.SnapshotSizeGB = $script:snaps.SizeGB
+       $vms.SnapshotName = &{$script:snaps = Get-Snapshot -VM $vm.Name; $script:snaps.Name -join ','}
+       $vms.SnapshotDate = $script:snaps.Created -join ','
+       $vms.SnapshotSizeGB = $script:snaps.SizeGB
        $Report += $vms
        Write-Host $vm.Name
-          }
+   }
    $report | export-csv -path ($RootPathName + "\" + $VC.ToString() + "\" + "Inventory"+ (Get-Date -format "yyyy-MM-ddThh-mm-ss") + "VMs.csv") -NoTypeInformation -UseCulture
 
    Disconnect-VIServer -Server $VC.ToString() -Confirm:$false
@@ -149,14 +143,3 @@ ForEach ($VC in $VCS) {
  MergeFiles -dir $RootPathName -OutFile $outFileHW -Pattern $InputPatternHW
  MergeFiles -dir $RootPathName -OutFile $outFileConf -Pattern $InputPatternConf
  MergeFiles -dir $RootPathName -OutFile $outFileVMs -Pattern $InputPatternVms
-
-#Add Azure Information
-Get-AzureRmResource | Export-CSV -path ($RootPathName + "\" + "AzureResources.csv") -NoTypeInformation -UseCulture
-
-$acctKey = ConvertTo-SecureString -String "qJUPDm1Nddxw5ZLCrbsFa6rwZFyq1adqeoOnBJnlEbe/qcPfiSqUaWhfYqH2PnCWXBvuaPoRu9CyBhX0r1J/nQ==" -AsPlainText -Force
-$credential = New-Object System.Management.Automation.PSCredential -ArgumentList "Azure\amsphdemisc01", $acctKey
-New-PSDrive -Name Z -PSProvider FileSystem -Root "\\amsphdemisc01.file.core.windows.net\import-csv-files" -Credential $credential -Persist
-
-Copy-Item -Path ($RootPathName + "\*.csv") -Destination Z:\ -Force
-
-Remove-PSDrive -Name Z
