@@ -36,14 +36,16 @@
 
 #>
 
-$credFileName = "adminph-de.clixml"
-$credPathName = "C:\Scripts\cred" 
 $OutputPathName = "C:\EXPORTS"
-$DNSServerName = "ams-ad-dc01-p.dk.flsmidth.net"
+$DNSServerName = "ams-ad-dc01-p"
 $DNSZone = "dk.flsmidth.net"
 $VcNamePattern = "*-VC??-?"
 
 # Dont' change anything below this line if you don't know what you do.
+
+if (!(Test-Path $env:userprofile\$env:username.clixml)) {
+    Get-Credential | Export-Clixml $env:userprofile\$env:username.clixml
+   }
 
 #Create and switch to Work Directory
 if (!(Test-Path $OutputPathName)) {
@@ -55,7 +57,7 @@ Set-Location ($OutputPathName + "\" + (Get-Date -format "yyyy-MM-dd_hh-mm-ss"))
 $RootPathName =  ($OutputPathName + "\" + (Get-Date -format "yyyy-MM-dd_hh-mm-ss"))
 
 #Select Credentials
-$UserCred = Import-clixml "$credPathName\$credFileName"
+$UserCred = Import-clixml $env:userprofile\$env:username.clixml
 
 #Close all open connections
 $serverlist = $global:DefaultVIServer
@@ -160,3 +162,37 @@ New-PSDrive -Name Z -PSProvider FileSystem -Root "\\amsphdemisc01.file.core.wind
 Copy-Item -Path ($RootPathName + "\*.csv") -Destination Z:\ -Force
 
 Remove-PSDrive -Name Z
+# SIG # Begin signature block
+# MIIFzQYJKoZIhvcNAQcCoIIFvjCCBboCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
+# gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUVFALHS88kMGTs8HEbqT4aLG4
+# k8OgggNXMIIDUzCCAjugAwIBAgIQEttTvOk9o59GIKDy1FPlxDANBgkqhkiG9w0B
+# AQsFADArMSkwJwYDVQQDDCBhZG1pbnBoQGZsc21pZHRoLm9ubWljcm9zb2Z0LmNv
+# bTAeFw0xODA5MTIyMTA5NTJaFw0xOTA5MTIyMTI5NTJaMCsxKTAnBgNVBAMMIGFk
+# bWlucGhAZmxzbWlkdGgub25taWNyb3NvZnQuY29tMIIBIjANBgkqhkiG9w0BAQEF
+# AAOCAQ8AMIIBCgKCAQEAn6d1MX3Og/HWQMRFbIA0lP6IrS8L6/WjDR5TzcoKWU8j
+# W+/3OzD+oqt4B36WzhyJzWkiAwAbLUnYGRhsfpLQYfKQJlZP9RFP1Xadl5PbA9Md
+# 2J8909gyT6aXupxMe6PZC3LnFUemYPyHysqUcDZ68rfXjz7/EXSBFnHhypAx+NsQ
+# 5Fwu556XxIS7eixl7ClADJOSVVKM+cw/x0IHfMKzm03rulPBDzGSChH8GbS/Xpmj
+# HiRCaIWvlHY6jJkkJipWp9w+cpY7Pq8J2mAaINQ5WLbGC111FeSNamGcQ1ZMQZGm
+# TWEi9Xnh2H3FT6ftNc/YVkbuod/EoOhtoycRtCVB6QIDAQABo3MwcTAOBgNVHQ8B
+# Af8EBAMCB4AwEwYDVR0lBAwwCgYIKwYBBQUHAwMwKwYDVR0RBCQwIoIgYWRtaW5w
+# aEBmbHNtaWR0aC5vbm1pY3Jvc29mdC5jb20wHQYDVR0OBBYEFOw6NYug9kMkviGb
+# eaUsHGBa8itHMA0GCSqGSIb3DQEBCwUAA4IBAQAx+FTW5T7t8LZvdRSz5jL7gpwo
+# kuga2wgtYKwru3W6jlIHCXJ5bwlmyxk5uLypfljc2cAQg2kGlLPPsXK9fpAtvxAV
+# tEpM0iqDi5Ub1UpjhLdBBMKCT4yb+QnbFtKaQX3YTNoEEBqyS0G2zfcVur73cl7+
+# +1hj3oY1IT5yTddi9crZ3iCIGHaFDzGqRmI79HH3+I/gX01iu0BOUSgzFXIekrbp
+# VJML9ST40u7FXQsChAJxI3tw8JUpm9eE8UMJg7k/u2HXVULgGVNW0zwVhyUYW/XD
+# ZMwCYcRJqwVdMFiqwHFxm+t1oDxsJR7EXYIXDYZ/KjJnKVzvGN3j4jpYVUNBMYIB
+# 4DCCAdwCAQEwPzArMSkwJwYDVQQDDCBhZG1pbnBoQGZsc21pZHRoLm9ubWljcm9z
+# b2Z0LmNvbQIQEttTvOk9o59GIKDy1FPlxDAJBgUrDgMCGgUAoHgwGAYKKwYBBAGC
+# NwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgor
+# BgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0BCQQxFgQUaCBhhEJo
+# 5wrH8BWJGC4gFzIMyVkwDQYJKoZIhvcNAQEBBQAEggEAVBoNrjMbjmD8YBfp1Nsj
+# NSFTsGJuwBYTey/CMak64xz+vm756IaTFHPpqt2LkrHCRynhRGrvTvwUyBWWeDle
+# jATUlViNha9t7puwUhsMIUu0rsOPz+P1JkI7xDSG824Wo+xPmQ7fAAIuwH77/oCe
+# ZTgs8WyoteTpqj43gbhc6mE+m3cHK8yw/C1dOKoYpjBBv9YEXnk5GkeH3Z7cj2Ue
+# lXAlHo76C8ThK4LsHfo7BvCNk1mWi1pzRzwQI4uTODoxr53nGnfYX7iYAyd1IQPz
+# jzbYvScLI+zCjlfXntl7GgKbACj4Q+pptdWEWmVCAJMIXbLNJvRXPRcfprS/tCJ8
+# zA==
+# SIG # End signature block
