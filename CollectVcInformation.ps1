@@ -68,6 +68,8 @@ if($serverlist -eq $null) {write-host "No connected servers."} else {
 $outFileHW = Join-Path $RootPathName "Hardware_merged.csv"
 $outFileConf = Join-Path $RootPathName "Configuration_merged.csv"
 $outFileVMs = Join-Path $RootPathName "VMs_merged.csv"
+$outFileAZ = Join-Path $RootPathName "AzureResources_merged.csv"
+$InputPatternAZ = "AzureResources*.csv"
 $InputPatternHW = "*Hardware.csv"
 $InputPatternConf = "*Configuration.csv"
 $InputPatternVMs = "*VMs.csv"
@@ -153,7 +155,18 @@ ForEach ($VC in $VCS) {
  MergeFiles -dir $RootPathName -OutFile $outFileVMs -Pattern $InputPatternVms
 
 #Add Azure Information
-Get-AzureRmResource | Export-CSV -path ($RootPathName + "\" + "AzureResources.csv") -NoTypeInformation -UseCulture
+#Get-AzureRmResource | Export-CSV -path ($RootPathName + "\" + "AzureResources.csv") -NoTypeInformation -UseCulture
+
+$SubList = Get-AzureRmSubscription
+
+ForEach ($Sub in $SubList) {
+    $SubSelected = Select-AzureRmSubscription -Subscription $Sub.Name
+    Get-AzureRmResource | Export-CSV -path ($RootPathName + "\" + "AzureResources_" + $Sub.Name + ".csv") -NoTypeInformation -UseCulture
+}
+  
+MergeFiles -dir $RootPathName -OutFile $outFileAZ -Pattern $InputPatternAZ
+
+Get-AzureRmSubscription | Export-Csv Export-CSV -path ($RootPathName + "\" + "AzureSubscriptions.csv") -NoTypeInformation -UseCulture
 
 $acctKey = ConvertTo-SecureString -String "qJUPDm1Nddxw5ZLCrbsFa6rwZFyq1adqeoOnBJnlEbe/qcPfiSqUaWhfYqH2PnCWXBvuaPoRu9CyBhX0r1J/nQ==" -AsPlainText -Force
 $credential = New-Object System.Management.Automation.PSCredential -ArgumentList "Azure\amsphdemisc01", $acctKey
